@@ -1,12 +1,14 @@
 import pandas
-from ml_algorithms import LinearRegression
+from ml_algorithms import LinearRegression, LogisticRegression
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.impute import SimpleImputer
+
 
 # get training data
-df = pandas.read_csv('data/train.csv', index_col='Id')
+'''df = pandas.read_csv('data/train.csv', index_col='Id')
 
 Y = df['SalePrice'].copy()
 features = ['LotArea', 'YearBuilt', '1stFlrSF', '2ndFlrSF', 'FullBath', 'BedroomAbvGr', 'TotRmsAbvGrd']
@@ -42,4 +44,28 @@ output = pandas.DataFrame({'Id': df.index,
                        'SalePrice': predictions.reshape(-1)})
 
 # file submission for Kaggle competition
-output.to_csv('submission.csv', index=False)
+output.to_csv('submission.csv', index=False)'''
+
+df = pandas.read_csv('data/titanic/train.csv')
+
+X = df[['Fare', 'Age']].copy()
+Y = df['Survived'].copy()
+
+my_imputer = SimpleImputer()
+X = pandas.DataFrame(my_imputer.fit_transform(X))
+
+x = X.values #returns a numpy array
+min_max_scaler = preprocessing.MinMaxScaler()
+x_scaled = min_max_scaler.fit_transform(x)
+X = pandas.DataFrame(x_scaled)
+
+x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
+print(x_train.head())
+
+model = LogisticRegression(num_features=2, lr=0.001)
+history = model.train(X=x_train, Y=y_train, epochs=2500)
+
+history = history[100:]
+plt.plot(np.arange(0, len(history)), history)
+plt.show()
