@@ -46,10 +46,15 @@ output = pandas.DataFrame({'Id': df.index,
 # file submission for Kaggle competition
 output.to_csv('submission.csv', index=False)'''
 
-df = pandas.read_csv('data/titanic/train.csv')
+df = pandas.read_csv('data/iris.csv')
+df = df.replace('Iris-setosa', 1)
+df = df.replace('Iris-versicolor', 0)
+df = df.replace('Iris-virginica', 0)
 
-X = df[['Fare', 'Age']].copy()
-Y = df['Survived'].copy()
+features = df.columns
+
+X = df[features[:-1]].copy()
+Y = df['E'].copy()
 
 my_imputer = SimpleImputer()
 X = pandas.DataFrame(my_imputer.fit_transform(X))
@@ -61,11 +66,10 @@ X = pandas.DataFrame(x_scaled)
 
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
-print(x_train.head())
+model = LogisticRegression(num_features=4, lr=0.1)
+history = model.train(X=x_train, Y=y_train, epochs=2500, batch_size=1)
+model.test(X=x_test, Y=y_test)
 
-model = LogisticRegression(num_features=2, lr=0.001)
-history = model.train(X=x_train, Y=y_train, epochs=2500)
-
-history = history[100:]
+history = history[:]
 plt.plot(np.arange(0, len(history)), history)
 plt.show()

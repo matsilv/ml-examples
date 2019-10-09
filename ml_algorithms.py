@@ -125,16 +125,15 @@ class LogisticRegression:
 
                 pred_error += (predict - Y[i]) * X[i]
 
-                if cls == np.argmax(Y[i]):
+                if cls == Y[i]:
                     accuracy += 1
 
                 # Stochastic Gradient Descent
                 if (i + 1) % batch_size == 0:
-                    loss = self.learning_rate * pred_error / X.shape[0]
+                    loss = self.learning_rate * pred_error / batch_size
                     self.theta -= loss
 
             accuracy /= X.shape[0]
-
             print('Epoch: {} | MAE: {}'.format(e, accuracy))
             history.append(accuracy)
 
@@ -149,14 +148,22 @@ class LogisticRegression:
         :return:
         '''
 
-        mae = 0
+        accuracy = 0
         X, Y = X.to_numpy(), Y.to_numpy()
 
         for i in range(0, X.shape[0]):
-            predict = np.dot(X[i].T, self.theta)
-            mae += abs(predict - Y[i])
+            x = np.dot(X[i].T, self.theta)
+            predict = sigmoid(x)
 
-        print('Validation MAE: {}'.format(mae))
+            if predict >= 0.5:
+                cls = 1
+            else:
+                cls = 0
+
+            if cls == Y[i]:
+                accuracy += 1
+
+        print('Validation MAE: {}'.format(accuracy / X.shape[0]))
 
     def predict(self, X):
 
