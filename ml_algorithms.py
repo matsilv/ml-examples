@@ -12,7 +12,8 @@ class LinearRegression:
         '''
 
         self.n = num_features
-        self.theta = np.random.normal(size=(self.n, ))
+        # self.theta = np.random.normal(size=(self.n, ))
+        self.theta = np.zeros(shape=(2, ))
         self.learning_rate = lr
 
 
@@ -134,7 +135,7 @@ class LogisticRegression:
                     self.theta -= loss
 
             accuracy /= X.shape[0]
-            print('Epoch: {} | MAE: {}'.format(e, accuracy))
+            print('Epoch: {} | Accuracy: {} | Loss: {}'.format(e, accuracy, np.sum(pred_error)))
             history.append(accuracy)
 
         return history
@@ -176,7 +177,75 @@ class LogisticRegression:
         y = []
 
         for i in range(0, X.shape[0]):
-            predict = np.dot(X[i].T, self.theta)
-            y.append(predict)
+            x = np.dot(X[i].T, self.theta)
+            predict = sigmoid(x)
+
+            if predict >= 0.5:
+                y.append(1)
+            else:
+                y.append(0)
 
         return np.asarray(y)
+
+
+class NeuralNetwork:
+
+    def __init__(self, attr_num, num_clss, num_hidden):
+        self.attr_num = attr_num
+        self.num_clss = num_clss
+        self.num_hidden = num_hidden
+        # Normal distribution initialization with sigma=0.4 and mean=0
+        self.syn0 = np.random.normal(0, 0.4, (attr_num, num_hidden))
+        self.syn1 = np.random.normal(0, 0.4, (num_hidden, num_clss))
+
+    def train(self, num_epochs, lr, batch_size, X, y):
+        k = 0
+
+        X = X.to_numpy()
+        y = y.to_numpy()
+
+        history = []
+
+        while k < num_epochs:
+
+            l2_delta = np.zeros([self.syn1.shape[1]])
+            l1_delta = np.zeros([self.syn0.shape[1]])
+            count_batch = 0
+            accuracy = 0
+
+            for instance, classes_vect in zip(X, y):
+
+                l0 = instance
+                l1 = sigmoid(np.dot(l0, self.syn0))
+                l2 = sigmoid(np.dot(l1, self.syn1))
+
+                if np.argmax(l2) == np.argmax(classes_vect):
+                    accuracy += 1
+
+                l2_error = classes_vect - l2
+                l2_delta += l2_error * sigmoid(l2, deriv=True)
+                l1_error = l2_delta.dot(self.syn1.T)
+                l1_delta += l1_error * sigmoid(l1, deriv=True)
+                count_batch += 1
+
+                if count_batch == batch_size:
+                    for j in range(0, self.syn1.shape[1]):
+                        for i in range(0, self.syn1.shape[0]):
+                            self.syn1[i][j] += lr * l2_delta[j] / batch_size * l1[i]
+
+                    for j in range(0, self.syn0.shape[1]):
+                        for i in range(0, self.syn0.shape[0]):
+                            self.syn0[i][j] += lr * l1_delta[j] / batch_size * l0[i]
+
+                    count_batch = 0
+                    l2_delta = np.zeros([self.syn1.shape[1]])
+                    l1_delta = np.zeros([self.syn0.shape[1]])
+
+            k += 1
+
+            accuracy /= X.shape[0]
+            history.append(accuracy)
+
+            print('Epoch: {}/{} | Accuracy: {}'.format(k, num_epochs, accuracy))
+
+        return history
