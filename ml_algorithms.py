@@ -249,3 +249,74 @@ class NeuralNetwork:
             print('Epoch: {}/{} | Accuracy: {}'.format(k, num_epochs, accuracy))
 
         return history
+
+
+class KMeans:
+    def __init__(self, num_clusters, data_points):
+        """
+
+        :param num_clusters: set the number of desired clusters
+        :param data_points: data to be clustered
+        """
+        self.k = num_clusters
+        self.data = data_points.to_numpy()
+
+        self.__random_init__()
+
+        self.assigned_clusters = np.zeros(self.data.shape[0])
+
+
+    def __random_init__(self):
+        """
+        Choose initial centroids from data
+        :return:
+        """
+
+        indexes = np.random.choice(np.arange(0, self.data.shape[0]), size=self.k, replace=False)
+        self.centroids = self.data[indexes]
+        print(self.centroids)
+
+    def __assign_clusters__(self):
+        """
+        Assign each data point to a cluster
+        :return: distortion
+        """
+
+        dist = np.zeros((self.k, ))
+        distortion = 0
+
+        for index in range(0, self.data.shape[0]):
+            for i in range(0, self.k):
+                dist[i] = np.linalg.norm(self.data[index] - self.centroids[i])
+
+            self.assigned_clusters[index] = np.argmin(dist)
+            distortion += np.min(dist)
+
+        return distortion
+
+    def __compute_centroids__(self):
+
+        """
+        Compute new centroid as average of cluster data points
+        :return:
+        """
+
+        for i in range(0, self.k):
+            cluster = np.argwhere(self.assigned_clusters == i)
+            cluster_points = self.data[cluster].squeeze()
+            self.centroids[i] = np.mean(cluster_points, axis=0)
+
+        print(self.centroids)
+
+
+    def train(self, num_iter):
+        for i in range(0, num_iter):
+            J = self.__assign_clusters__()
+            print('Iteration: {} | Distortion: {}'.format(i, J))
+            self.__compute_centroids__()
+
+        return self.assigned_clusters
+
+
+
+
