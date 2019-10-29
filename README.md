@@ -7,3 +7,4 @@ Implemented algorithms:
 - [x] Linear Regression
 - [x] Logistic Regression for binary classification
 - [x] Three layers Neural Network
+- [x] KMeans
