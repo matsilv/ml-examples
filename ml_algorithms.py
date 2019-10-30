@@ -318,5 +318,27 @@ class KMeans:
         return self.assigned_clusters
 
 
+class AnomalyDetection:
+
+    def __init__(self, data, eps=1e-100):
+        """
+        :param data: features as Pandas dataframe
+        :param eps: probability threshold for anomaly detection
+        """
+        self.data = data.copy().to_numpy()
+        self.eps = eps
+
+    def fit(self):
+        self.mean = np.mean(self.data, axis=0)
+        self.sigma = np.var(self.data, axis=0)
+
+    def predict(self, x):
+        x = x.copy().to_numpy()
+        p = np.prod(1 / (np.sqrt(2 * np.pi) * self.sigma) * np.exp(- (x - self.mean) ** 2 / (2 * self.sigma ** 2)),
+                    axis=1)
+        return p < self.eps, p
+
+
+
 
 
