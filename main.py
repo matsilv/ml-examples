@@ -1,104 +1,53 @@
 import pandas
-from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, KMeans
+from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, KMeans, AnomalyDetection
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.impute import SimpleImputer
+import random
 
 
-# get training data
-'''df = pandas.read_csv('data/train.csv', index_col='Id')
+def load_planar_dataset():
+    np.random.seed(1)
+    m = 400  # number of examples
+    N = int(m / 2)  # number of points per class
+    D = 2  # dimensionality
+    X = np.zeros((m, D))  # data matrix where each row is a single example
+    Y = np.zeros((m, 1), dtype='uint8')  # labels vector (0 for red, 1 for blue)
+    a = 4  # maximum ray of the flower
 
-Y = df['SalePrice'].copy()
-features = ['LotArea', 'YearBuilt', '1stFlrSF', '2ndFlrSF', 'FullBath', 'BedroomAbvGr', 'TotRmsAbvGrd']
-X = df[features]
-x = X.values #returns a numpy array
-min_max_scaler = preprocessing.MinMaxScaler()
-x_scaled = min_max_scaler.fit_transform(x)
-X = pandas.DataFrame(x_scaled)
+    for j in range(2):
+        ix = range(N * j, N * (j + 1))
+        t = np.linspace(j * 3.12, (j + 1) * 3.12, N) + np.random.randn(N) * 0.2  # theta
+        r = a * np.sin(4 * t) + np.random.randn(N) * 0.2  # radius
+        X[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
+        Y[ix] = j
 
-x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    return X, Y
 
-# create and train the model
-model = LinearRegression(num_features=len(features), lr=0.1)
-history = model.train(X=x_train, Y=y_train, epochs=2000)
-model.test(X=x_test, Y=y_test)
 
-history = history[100:]
-plt.plot(np.arange(0, len(history)), history)
+def plot_decision_boundary(model, X, y):
+    # Set min and max values and give it some padding
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    h = 0.01
+    # Generate a grid of points with distance h between them
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    # Predict the function value for the whole grid
+    Z, _ = model.predict(X=np.c_[xx.ravel(), yy.ravel()], y=None)
+    Z = Z.reshape(xx.shape)
+    # Plot the contour and training examples
+    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
+    plt.ylabel('x2')
+    plt.xlabel('x1')
+    y = y.reshape(-1)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+
+
+X, Y = load_planar_dataset()
+model = NeuralNetwork(attr_num=X.shape[1], num_hidden=5, num_clss=1)
+model.train(num_epochs=100, lr=0.1, batch_size=1, X=X, y=Y)
+plot_decision_boundary(model, X, y=Y)
 plt.show()
 
-# get training data
-df = pandas.read_csv('data/test.csv', index_col='Id')
-
-X = df[features]
-x = X.values #returns a numpy array
-min_max_scaler = preprocessing.MinMaxScaler()
-x_scaled = min_max_scaler.fit_transform(x)
-X = pandas.DataFrame(x_scaled)
-
-predictions = model.predict(X)
-# save test predictions to file
-output = pandas.DataFrame({'Id': df.index,
-                       'SalePrice': predictions.reshape(-1)})
-
-# file submission for Kaggle competition
-output.to_csv('submission.csv', index=False)'''
-
-df = pandas.read_csv('data/iris.csv')
-
-features = df.columns[:-1]
-X = df[features].copy()
-Y = df['E'].copy()
-
-Y = pandas.get_dummies(Y)
-
-my_imputer = SimpleImputer()
-X = pandas.DataFrame(my_imputer.fit_transform(X))
-
-x = X.values #returns a numpy array
-min_max_scaler = preprocessing.MinMaxScaler()
-x_scaled = min_max_scaler.fit_transform(x)
-X = pandas.DataFrame(x_scaled)
-
-print(X.head())
-
-model = KMeans(num_clusters=3, data_points=X[[2, 3]])
-clusters = model.train(num_iter=7)
-
-x1 = X[2]
-x2 = X[3]
-plt.scatter(x1, x2, c=clusters)
-plt.show()
-
-exit()
-
-#x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.99, test_size=0.01, random_state=42)
-
-'''model = LogisticRegression(num_features=4, lr=0.01)
-history = model.train(X=x_train, Y=y_train, epochs=3000, batch_size=64)
-model.test(X=x_test, Y=y_test)'''
-
-#model = NeuralNetwork(attr_num=4, num_clss=3, num_hidden=25)
-#history = model.train(num_epochs=1000, lr=0.1, batch_size=8, X=X, y=Y)
-
-history = history[:]
-plt.plot(np.arange(0, len(history)), history)
-plt.show()
-
-'''df = pandas.read_csv('data/titanic/test.csv', index_col='PassengerId')
-
-X = df[features]
-x = X.values #returns a numpy array
-min_max_scaler = preprocessing.MinMaxScaler()
-x_scaled = min_max_scaler.fit_transform(x)
-X = pandas.DataFrame(x_scaled)
-
-predictions = model.predict(X)
-# save test predictions to file
-output = pandas.DataFrame({'PassengerId': df.index,
-                       'Survived': predictions.reshape(-1)})
-
-# file submission for Kaggle competition
-output.to_csv('submission.csv', index=False)'''

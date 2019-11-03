@@ -28,7 +28,7 @@ class LinearRegression:
         :return: history of mae during training process
         '''
 
-        X, Y = X.to_numpy(), Y.to_numpy()
+        #X, Y = X.to_numpy(), Y.to_numpy()
         history = []
 
         for e in range(0, epochs):
@@ -59,7 +59,7 @@ class LinearRegression:
         '''
 
         mae = 0
-        X, Y = X.to_numpy(), Y.to_numpy()
+        #X, Y = X.to_numpy(), Y.to_numpy()
 
         for i in range(0, X.shape[0]):
             predict = np.dot(X[i].T, self.theta)
@@ -201,8 +201,8 @@ class NeuralNetwork:
     def train(self, num_epochs, lr, batch_size, X, y):
         k = 0
 
-        X = X.to_numpy()
-        y = y.to_numpy()
+        #X = X.to_numpy()
+        #y = y.to_numpy()
 
         history = []
 
@@ -211,16 +211,13 @@ class NeuralNetwork:
             l2_delta = np.zeros([self.syn1.shape[1]])
             l1_delta = np.zeros([self.syn0.shape[1]])
             count_batch = 0
-            accuracy = 0
+
 
             for instance, classes_vect in zip(X, y):
 
                 l0 = instance
                 l1 = sigmoid(np.dot(l0, self.syn0))
                 l2 = sigmoid(np.dot(l1, self.syn1))
-
-                if np.argmax(l2) == np.argmax(classes_vect):
-                    accuracy += 1
 
                 l2_error = classes_vect - l2
                 l2_delta += l2_error * sigmoid(l2, deriv=True)
@@ -243,12 +240,47 @@ class NeuralNetwork:
 
             k += 1
 
-            accuracy /= X.shape[0]
-            history.append(accuracy)
+            _, accuracy = self.predict(X, y)
 
             print('Epoch: {}/{} | Accuracy: {}'.format(k, num_epochs, accuracy))
 
         return history
+
+    def predict(self, X, y=None):
+        accuracy = 0
+        pred = []
+
+        for i in range(0, X.shape[0]):
+            instance = X[i]
+
+            l0 = instance
+            l1 = sigmoid(np.dot(l0, self.syn0))
+            l2 = sigmoid(np.dot(l1, self.syn1))
+
+
+            if y is not None:
+                classes_vect = y[i]
+
+            if self.num_clss > 1:
+                p = np.argmax(l2)
+                pred.append(p)
+
+                if y is not None and p == np.argmax(classes_vect):
+                    accuracy += 1
+            else:
+                if l2[0] > 0.5:
+                    p = 1
+                    pred.append(p)
+                else:
+                    p = 0
+                    pred.append(p)
+
+                if y is not None and p == classes_vect[0]:
+                    accuracy += 1
+
+        accuracy = accuracy / X.shape[0]
+
+        return np.asarray(pred), accuracy
 
 
 class KMeans:
@@ -320,7 +352,7 @@ class KMeans:
 
 class AnomalyDetection:
 
-    def __init__(self, data, eps=1e-100):
+    def __init__(self, data, eps=0.01):
         """
         :param data: features as Pandas dataframe
         :param eps: probability threshold for anomaly detection
