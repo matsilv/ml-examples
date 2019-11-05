@@ -198,45 +198,32 @@ class NeuralNetwork:
         self.syn0 = np.random.normal(0, 0.4, (attr_num, num_hidden))
         self.syn1 = np.random.normal(0, 0.4, (num_hidden, num_clss))
 
-    def train(self, num_epochs, lr, batch_size, X, y):
+    def train(self, num_epochs, lr, X, y):
         k = 0
 
         #X = X.to_numpy()
         #y = y.to_numpy()
 
         history = []
+        m = X.shape[0]
 
         while k < num_epochs:
 
-            l2_delta = np.zeros([self.syn1.shape[1]])
-            l1_delta = np.zeros([self.syn0.shape[1]])
-            count_batch = 0
+            # forward pass
+            l1 = np.tanh(np.dot(X, self.syn0))
+            l2 = sigmoid(np.dot(l1, self.syn1))
 
+            # backprop
+            l2_error = l2 - y
+            l2_delta = (1 / m) * np.dot(l1.T, l2_error)
+            assert l2_delta.shape == self.syn1.shape
 
-            for instance, classes_vect in zip(X, y):
+            l1_error = np.dot(l2_error, self.syn1.T) * (1 - np.power(l1, 2))
+            l1_delta = (1 / m) * np.dot(X.T, l1_error)
+            assert l1_delta.shape == self.syn0.shape
 
-                l0 = instance
-                l1 = sigmoid(np.dot(l0, self.syn0))
-                l2 = sigmoid(np.dot(l1, self.syn1))
-
-                l2_error = classes_vect - l2
-                l2_delta += l2_error * sigmoid(l2, deriv=True)
-                l1_error = l2_delta.dot(self.syn1.T)
-                l1_delta += l1_error * sigmoid(l1, deriv=True)
-                count_batch += 1
-
-                if count_batch == batch_size:
-                    for j in range(0, self.syn1.shape[1]):
-                        for i in range(0, self.syn1.shape[0]):
-                            self.syn1[i][j] += lr * l2_delta[j] / batch_size * l1[i]
-
-                    for j in range(0, self.syn0.shape[1]):
-                        for i in range(0, self.syn0.shape[0]):
-                            self.syn0[i][j] += lr * l1_delta[j] / batch_size * l0[i]
-
-                    count_batch = 0
-                    l2_delta = np.zeros([self.syn1.shape[1]])
-                    l1_delta = np.zeros([self.syn0.shape[1]])
+            self.syn0 -= lr * l1_delta
+            self.syn1 -= lr * l2_delta
 
             k += 1
 
@@ -248,39 +235,16 @@ class NeuralNetwork:
 
     def predict(self, X, y=None):
         accuracy = 0
-        pred = []
+        # forward pass
+        l1 = np.tanh(np.dot(X, self.syn0))
+        l2 = sigmoid(np.dot(l1, self.syn1))
 
-        for i in range(0, X.shape[0]):
-            instance = X[i]
+        preds = (l2 > 0.5) * 1
 
-            l0 = instance
-            l1 = sigmoid(np.dot(l0, self.syn0))
-            l2 = sigmoid(np.dot(l1, self.syn1))
-
-
-            if y is not None:
-                classes_vect = y[i]
-
-            if self.num_clss > 1:
-                p = np.argmax(l2)
-                pred.append(p)
-
-                if y is not None and p == np.argmax(classes_vect):
-                    accuracy += 1
-            else:
-                if l2[0] > 0.5:
-                    p = 1
-                    pred.append(p)
-                else:
-                    p = 0
-                    pred.append(p)
-
-                if y is not None and p == classes_vect[0]:
-                    accuracy += 1
-
+        accuracy = np.sum(np.equal(preds, y) * 1)
         accuracy = accuracy / X.shape[0]
 
-        return np.asarray(pred), accuracy
+        return preds, accuracy
 
 
 class KMeans:
