@@ -199,6 +199,14 @@ class NeuralNetwork:
         self.syn1 = np.random.normal(0, 0.4, (num_hidden, num_clss))
 
     def train(self, num_epochs, lr, X, y):
+        """
+
+        :param num_epochs: number of training epochs
+        :param lr: learning rate
+        :param X: training instance as python array with shape (number_of_examples, number_of_attributes)
+        :param y: training labels as python array with shape (number_of_examples, number_of_classes)
+        :return: training history as list of tuples with format (epoch, accuracy, loss)
+        """
         k = 0
 
         #X = X.to_numpy()
@@ -215,6 +223,7 @@ class NeuralNetwork:
 
             # backprop
             l2_error = l2 - y
+            loss = np.sum(np.abs(l2_error))
             l2_delta = (1 / m) * np.dot(l1.T, l2_error)
             assert l2_delta.shape == self.syn1.shape
 
@@ -229,7 +238,9 @@ class NeuralNetwork:
 
             _, accuracy = self.predict(X, y)
 
-            print('Epoch: {}/{} | Accuracy: {}'.format(k, num_epochs, accuracy))
+            history.append((k, accuracy, loss))
+
+            print('Epoch: {}/{} | | Accuracy: {:.2f} | Loss: {:.4f}'.format(k, num_epochs, accuracy, loss))
 
         return history
 
@@ -239,10 +250,17 @@ class NeuralNetwork:
         l1 = np.tanh(np.dot(X, self.syn0))
         l2 = sigmoid(np.dot(l1, self.syn1))
 
-        preds = (l2 > 0.5) * 1
+        if self.num_clss == 1:
+            preds = (l2 > 0.5) * 1
+        else:
+            preds = np.argmax(l2, axis=1)
+            if y is not None:
+                y = np.argmax(y, axis=1)
 
-        accuracy = np.sum(np.equal(preds, y) * 1)
-        accuracy = accuracy / X.shape[0]
+        accuracy = None
+        if y is not None:
+            accuracy = np.sum(np.equal(preds, y) * 1)
+            accuracy = accuracy / X.shape[0]
 
         return preds, accuracy
 

@@ -46,7 +46,14 @@ def plot_decision_boundary(model, X, y):
 
 
 X, Y = load_planar_dataset()
-model = NeuralNetwork(attr_num=X.shape[1], num_hidden=3, num_clss=1)
+'''df = pandas.read_csv('data/iris.csv')
+X = df[df.columns[:-1]]
+Y = df[[df.columns[-1]]]
+Y = pandas.get_dummies(Y)
+X = X.to_numpy()
+Y = Y.to_numpy()'''
+
+model = NeuralNetwork(attr_num=X.shape[1], num_hidden=10, num_clss=Y.shape[1])
 model.train(num_epochs=10000, lr=1.0, X=X, y=Y)
 plot_decision_boundary(model, X, y=Y)
 plt.show()
