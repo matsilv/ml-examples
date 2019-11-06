@@ -198,13 +198,15 @@ class NeuralNetwork:
         self.syn0 = np.random.normal(0, 0.4, (attr_num, num_hidden))
         self.syn1 = np.random.normal(0, 0.4, (num_hidden, num_clss))
 
-    def train(self, num_epochs, lr, X, y):
+    def train(self, num_epochs, lr, X, y, reg_l2=0, keep_prob=1.0):
         """
 
         :param num_epochs: number of training epochs
         :param lr: learning rate
         :param X: training instance as python array with shape (number_of_examples, number_of_attributes)
         :param y: training labels as python array with shape (number_of_examples, number_of_classes)
+        :param reg_l2: L2-regularization parameters
+        :param keep_prob: dropout keep probability for activation node
         :return: training history as list of tuples with format (epoch, accuracy, loss)
         """
         k = 0
@@ -219,16 +221,29 @@ class NeuralNetwork:
 
             # forward pass
             l1 = np.tanh(np.dot(X, self.syn0))
+            #dropout
+            if keep_prob != 1:
+                drop = np.random.rand(*l1.shape)
+                drop_l1 = (drop < keep_prob).astype('int')
+                l1 = l1 * drop_l1
+                l1 = l1 / keep_prob
+
             l2 = sigmoid(np.dot(l1, self.syn1))
 
             # backprop
             l2_error = l2 - y
             loss = np.sum(np.abs(l2_error))
-            l2_delta = (1 / m) * np.dot(l1.T, l2_error)
+            l2_delta = (1 / m) * np.dot(l1.T, l2_error) + (reg_l2 / m) * self.syn1
             assert l2_delta.shape == self.syn1.shape
 
             l1_error = np.dot(l2_error, self.syn1.T) * (1 - np.power(l1, 2))
-            l1_delta = (1 / m) * np.dot(X.T, l1_error)
+
+            if keep_prob != 1:
+                l1_error_drop = l1_error * drop
+                l1_error_drop = l1_error_drop / keep_prob
+                l1_error = np.multiply(l1_error_drop, np.int64(l1 > 0))
+
+            l1_delta = (1 / m) * np.dot(X.T, l1_error) + (reg_l2 / m) * self.syn0
             assert l1_delta.shape == self.syn0.shape
 
             self.syn0 -= lr * l1_delta
