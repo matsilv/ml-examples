@@ -66,10 +66,10 @@ Y = pandas.get_dummies(Y)
 X = X.to_numpy()
 Y = Y.to_numpy()
 
-X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1)
 
-model = NeuralNetwork(attr_num=X_train.shape[1], num_hidden=10, num_clss=y_train.shape[1])
-model.train(num_epochs=10000, lr=0.1, X=X_train, y=y_train, reg_l2=1.0, keep_prob=1.0)
+model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
+model.train(num_epochs=10000, lr=0.1, X=X_train, Y=y_train, reg_l2=0.5, keep_prob=1.0, batch_size=64)
 _, acc = model.predict(X=X_test, y=y_test)
 print('Test set accuracy: {:.2f}'.format(acc))
 #plot_decision_boundary(model, X_test, y=y_test)

@@ -190,21 +190,29 @@ class LogisticRegression:
 
 class NeuralNetwork:
 
-    def __init__(self, attr_num, num_clss, num_hidden):
+    def __init__(self, attr_num, num_clss, hidden_layers):
         self.attr_num = attr_num
         self.num_clss = num_clss
-        self.num_hidden = num_hidden
-        # Normal distribution initialization with sigma=0.4 and mean=0
-        self.syn0 = np.random.normal(0, 0.4, (attr_num, num_hidden))
-        self.syn1 = np.random.normal(0, 0.4, (num_hidden, num_clss))
+        self.hidden_layers = hidden_layers
 
-    def train(self, num_epochs, lr, X, y, reg_l2=0, keep_prob=1.0):
+        self.syn = []
+        # Normal distribution initialization with sigma=0.4 and mean=0
+        self.syn.append(np.random.normal(0, 0.4, (attr_num, self.hidden_layers[0])))
+
+        for i in range(0, len(self.hidden_layers)-1):
+            self.syn.append(np.random.normal(0, 0.4, (self.hidden_layers[i], self.hidden_layers[i+1])))
+
+        self.syn.append(np.random.normal(0, 0.4, (self.hidden_layers[len(self.hidden_layers)-1], num_clss)))
+
+
+    def train(self, num_epochs, lr, X, Y, reg_l2=0, keep_prob=1.0, batch_size=64):
         """
 
         :param num_epochs: number of training epochs
         :param lr: learning rate
         :param X: training instance as python array with shape (number_of_examples, number_of_attributes)
-        :param y: training labels as python array with shape (number_of_examples, number_of_classes)
+        :param Y: training labels as python array with shape (number_of_examples, number_of_classes)
+        :param hidden_layers: a list containing the number of units for each layer
         :param reg_l2: L2-regularization parameters
         :param keep_prob: dropout keep probability for activation node
         :return: training history as list of tuples with format (epoch, accuracy, loss)
@@ -219,56 +227,84 @@ class NeuralNetwork:
 
         while k < num_epochs:
 
-            # forward pass
-            l1 = np.tanh(np.dot(X, self.syn0))
-            #dropout
-            if keep_prob != 1:
-                drop = np.random.rand(*l1.shape)
-                drop_l1 = (drop < keep_prob).astype('int')
-                l1 = l1 * drop_l1
-                l1 = l1 / keep_prob
+            x_batches = np.split(X, X.shape[0] / batch_size)
+            y_batches = np.split(Y, Y.shape[0] / batch_size)
 
-            l2 = sigmoid(np.dot(l1, self.syn1))
+            for x, y in zip(x_batches, y_batches):
 
-            # backprop
-            l2_error = l2 - y
-            loss = np.sum(np.abs(l2_error))
-            l2_delta = (1 / m) * np.dot(l1.T, l2_error) + (reg_l2 / m) * self.syn1
-            assert l2_delta.shape == self.syn1.shape
+                l = []
+                all_l_deltas = []
 
-            l1_error = np.dot(l2_error, self.syn1.T) * (1 - np.power(l1, 2))
+                l.append(x.copy())
+                l_tmp = x.copy()
 
-            if keep_prob != 1:
-                l1_error_drop = l1_error * drop
-                l1_error_drop = l1_error_drop / keep_prob
-                l1_error = np.multiply(l1_error_drop, np.int64(l1 > 0))
+                # forward pass
 
-            l1_delta = (1 / m) * np.dot(X.T, l1_error) + (reg_l2 / m) * self.syn0
-            assert l1_delta.shape == self.syn0.shape
+                for i in range(0, len(self.hidden_layers)):
+                    l_tmp = np.tanh(np.dot(l_tmp, self.syn[i]))
+                    l.append(l_tmp)
 
-            self.syn0 -= lr * l1_delta
-            self.syn1 -= lr * l2_delta
+                #dropout
+                '''if keep_prob != 1:
+                    drop = np.random.rand(*l1.shape)
+                    drop_l1 = (drop < keep_prob).astype('int')
+                    l1 = l1 * drop_l1
+                    l1 = l1 / keep_prob'''
+
+                l.append(sigmoid(np.dot(l_tmp, self.syn[len(self.syn)-1])))
+
+                # backprop
+                l_error = l[len(l)-1] - y
+                loss = np.sum(np.abs(l_error))
+                l_delta = (1 / m) * np.dot(l[len(l)-2].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-1]
+                all_l_deltas.append(l_delta)
+                assert l_delta.shape == self.syn[len(self.syn)-1].shape
+
+                for i in range(0, len(self.hidden_layers), 1):
+                    l_error = np.dot(l_error, self.syn[len(self.syn)-1-i].T) * (1 - np.power(l[len(l)-2-i], 2))
+
+                    '''if keep_prob != 1:
+                        l1_error_drop = l1_error * drop
+                        l1_error_drop = l1_error_drop / keep_prob
+                        l1_error = np.multiply(l1_error_drop, np.int64(l1 > 0))'''
+
+                    l_delta = (1 / m) * np.dot(l[len(l)-3-i].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-2-i]
+                    all_l_deltas.append(l_delta)
+
+                    assert l_delta.shape == self.syn[len(self.syn)-2-i].shape
+
+                all_l_deltas = reversed(all_l_deltas)
+
+                j = 0
+
+                for x in all_l_deltas:
+                    self.syn[j] -= lr * x
+                    j += 1
 
             k += 1
 
-            _, accuracy = self.predict(X, y)
+            _, accuracy = self.predict(X, Y)
 
             history.append((k, accuracy, loss))
 
-            print('Epoch: {}/{} | | Accuracy: {:.2f} | Loss: {:.4f}'.format(k, num_epochs, accuracy, loss))
+            print('Epoch: {}/{} | Accuracy: {:.2f} | Loss: {:.4f}'.format(k, num_epochs, accuracy, loss))
 
         return history
 
     def predict(self, X, y=None):
         accuracy = 0
         # forward pass
-        l1 = np.tanh(np.dot(X, self.syn0))
-        l2 = sigmoid(np.dot(l1, self.syn1))
+        l_tmp = X
+
+        for i in range(0, len(self.hidden_layers)):
+            l_tmp = np.tanh(np.dot(l_tmp, self.syn[i]))
+
+        l_out = sigmoid(np.dot(l_tmp, self.syn[len(self.syn) - 1]))
 
         if self.num_clss == 1:
-            preds = (l2 > 0.5) * 1
+            preds = (l_out > 0.5) * 1
         else:
-            preds = np.argmax(l2, axis=1)
+            preds = np.argmax(l_out, axis=1)
             if y is not None:
                 y = np.argmax(y, axis=1)
 
