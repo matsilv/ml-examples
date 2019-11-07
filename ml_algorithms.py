@@ -205,7 +205,7 @@ class NeuralNetwork:
         self.syn.append(np.random.normal(0, 0.4, (self.hidden_layers[len(self.hidden_layers)-1], num_clss)))
 
 
-    def train(self, num_epochs, lr, X, Y, reg_l2=0, keep_prob=1.0, batch_size=64):
+    def train(self, num_epochs, lr, X, Y, reg_l2=0, keep_prob=1.0, batch_size=64, momentum=1.0):
         """
 
         :param num_epochs: number of training epochs
@@ -224,6 +224,11 @@ class NeuralNetwork:
 
         history = []
         m = X.shape[0]
+
+        # exponentially moving averages initialization
+        all_v_deltas = []
+        for s in self.syn:
+            all_v_deltas.append(np.zeros_like(s))
 
         while k < num_epochs:
 
@@ -257,7 +262,12 @@ class NeuralNetwork:
                 l_error = l[len(l)-1] - y
                 loss = np.sum(np.abs(l_error))
                 l_delta = (1 / m) * np.dot(l[len(l)-2].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-1]
+
+                # apply momentum
+                l_delta = momentum * all_v_deltas[len(self.syn)-1] + (1 - momentum) * l_delta
+
                 all_l_deltas.append(l_delta)
+                all_v_deltas[len(self.syn)-1] = l_delta
                 assert l_delta.shape == self.syn[len(self.syn)-1].shape
 
                 for i in range(0, len(self.hidden_layers), 1):
@@ -269,7 +279,12 @@ class NeuralNetwork:
                         l1_error = np.multiply(l1_error_drop, np.int64(l1 > 0))'''
 
                     l_delta = (1 / m) * np.dot(l[len(l)-3-i].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-2-i]
+
+                    # apply momentum
+                    l_delta = momentum * all_v_deltas[len(self.syn)-2-i] + (1 - momentum) * l_delta
+
                     all_l_deltas.append(l_delta)
+                    all_v_deltas[len(self.syn)-2-i] = l_delta
 
                     assert l_delta.shape == self.syn[len(self.syn)-2-i].shape
 
@@ -277,7 +292,7 @@ class NeuralNetwork:
 
                 j = 0
 
-                for x in all_l_deltas:
+                for x in all_v_deltas:
                     self.syn[j] -= lr * x
                     j += 1
 
