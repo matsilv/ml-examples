@@ -57,20 +57,20 @@ def plot_decision_boundary(model, X, y):
 
 #X_train, y_train, X_test, y_test = load_2D_dataset()
 
-X, Y = load_planar_dataset()
+#X, Y = load_planar_dataset()
 
-'''df = pandas.read_csv('data/iris.csv')
+df = pandas.read_csv('data/iris.csv')
 X = df[df.columns[:-1]]
 Y = df[[df.columns[-1]]]
 Y = pandas.get_dummies(Y)
 X = X.to_numpy()
-Y = Y.to_numpy()'''
+Y = Y.to_numpy()
 
 X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1)
 
 model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
-model.train(num_epochs=10000, lr=1.0, X=X_train, Y=y_train, reg_l2=0.5, keep_prob=1.0, batch_size=64,
-            momentum=0.9)
+model.train(num_epochs=100, lr=0.01, X=X_train, Y=y_train, reg_l2=0.0, keep_prob=1.0, batch_size=64,
+            optimizer='adam', beta1=0.9, beta2=0.999)
 _, acc = model.predict(X=X_test, y=y_test)
 print('Test set accuracy: {:.2f}'.format(acc))
 #plot_decision_boundary(model, X_test, y=y_test)

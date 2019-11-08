@@ -1,5 +1,6 @@
 import numpy as np
 from utility import sigmoid
+import math
 
 
 class LinearRegression:
@@ -205,18 +206,29 @@ class NeuralNetwork:
         self.syn.append(np.random.normal(0, 0.4, (self.hidden_layers[len(self.hidden_layers)-1], num_clss)))
 
 
-    def train(self, num_epochs, lr, X, Y, reg_l2=0, keep_prob=1.0, batch_size=64, momentum=1.0):
+    def train(self, num_epochs, lr, X, Y, reg_l2=0, keep_prob=1.0, batch_size=64,
+              optimizer='sgd', beta1=0.0, beta2=0.0, epsilon=1e-8):
         """
 
         :param num_epochs: number of training epochs
         :param lr: learning rate
         :param X: training instance as python array with shape (number_of_examples, number_of_attributes)
         :param Y: training labels as python array with shape (number_of_examples, number_of_classes)
-        :param hidden_layers: a list containing the number of units for each layer
         :param reg_l2: L2-regularization parameters
         :param keep_prob: dropout keep probability for activation node
+        :param batch_size: mini-batch size
+        :param optimizer: a string representing the optimizer: {sgd: Stochastic Gradient Descent, rmsp: Root Mean
+                            Squared Prop, adam: Adaptive Momentum
+        :param beta1: momentum hyperparameter
+        :param beta2: RMSprop hyperparameter
+        :param epsilon: epsilon parameter for RMSprop
         :return: training history as list of tuples with format (epoch, accuracy, loss)
         """
+
+        if optimizer not in ['sgd', 'adam']:
+            print('Illegal optimizer')
+            exit(1)
+
         k = 0
 
         #X = X.to_numpy()
@@ -227,8 +239,12 @@ class NeuralNetwork:
 
         # exponentially moving averages initialization
         all_v_deltas = []
+        all_s_deltas = []
+        all_s_deltas_sign = []
         for s in self.syn:
             all_v_deltas.append(np.zeros_like(s))
+            all_s_deltas.append(np.zeros_like(s))
+            all_s_deltas_sign.append((np.ones_like(s)))
 
         while k < num_epochs:
 
@@ -263,11 +279,11 @@ class NeuralNetwork:
                 loss = np.sum(np.abs(l_error))
                 l_delta = (1 / m) * np.dot(l[len(l)-2].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-1]
 
-                # apply momentum
-                l_delta = momentum * all_v_deltas[len(self.syn)-1] + (1 - momentum) * l_delta
+                l_delta_v = beta1 * all_v_deltas[len(self.syn)-1] + (1 - beta1) * l_delta
+                all_v_deltas[len(self.syn)-1] = l_delta_v
+                l_delta_s = beta2 * all_s_deltas[len(self.syn)-1] + (1 - beta2) * l_delta ** 2
+                all_s_deltas[len(self.syn)-1] = l_delta_s
 
-                all_l_deltas.append(l_delta)
-                all_v_deltas[len(self.syn)-1] = l_delta
                 assert l_delta.shape == self.syn[len(self.syn)-1].shape
 
                 for i in range(0, len(self.hidden_layers), 1):
@@ -280,11 +296,13 @@ class NeuralNetwork:
 
                     l_delta = (1 / m) * np.dot(l[len(l)-3-i].T, l_error) + (reg_l2 / m) * self.syn[len(self.syn)-2-i]
 
-                    # apply momentum
-                    l_delta = momentum * all_v_deltas[len(self.syn)-2-i] + (1 - momentum) * l_delta
-
+                    l_delta_v = beta1 * all_v_deltas[len(self.syn)-2-i] + (1 - beta1) * l_delta
                     all_l_deltas.append(l_delta)
-                    all_v_deltas[len(self.syn)-2-i] = l_delta
+                    all_v_deltas[len(self.syn)-2-i] = l_delta_v
+
+                    l_delta_s = beta2 * all_s_deltas[len(self.syn)-2-i] + (1 - beta2) * l_delta ** 2
+                    all_l_deltas.append(l_delta)
+                    all_s_deltas[len(self.syn)-2-i] = l_delta_s
 
                     assert l_delta.shape == self.syn[len(self.syn)-2-i].shape
 
@@ -292,9 +310,15 @@ class NeuralNetwork:
 
                 j = 0
 
-                for x in all_v_deltas:
-                    self.syn[j] -= lr * x
-                    j += 1
+                if optimizer == 'sgd':
+                    for x in all_v_deltas:
+                        self.syn[j] -= lr * x
+                        j += 1
+                elif optimizer == 'adam':
+                    for x_v, x_s in zip(all_v_deltas, all_s_deltas):
+                        self.syn[j] -= lr * x_v / (np.sqrt(x_s) + epsilon)
+                        j += 1
+
 
             k += 1
 
