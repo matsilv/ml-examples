@@ -6,6 +6,6 @@ Implementing some Machine Learning algorithms using only Numpy.
 Implemented algorithms:
 - [x] Linear Regression
 - [x] Logistic Regression for binary classification
-- [x] Two layers Neural Network
+- [x] Multi-layers Neural Network
 - [x] KMeans
 - [x] Anomaly Detection
