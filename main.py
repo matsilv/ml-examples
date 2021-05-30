@@ -11,6 +11,7 @@ import os
 ########################################################################################################################
 
 
+
 def load_planar_dataset():
     np.random.seed(1)
     m = 400  # number of examples
@@ -28,18 +29,6 @@ def load_planar_dataset():
         Y[ix] = j
 
     return X, Y
-
-
-def load_2D_dataset():
-    data = scipy.io.loadmat('data/data.mat')
-    train_X = data['X']
-    train_Y = data['y']
-    test_X = data['Xval']
-    test_Y = data['yval']
-
-    plt.scatter(train_X[:, 0], train_X[:, 1], c=np.reshape(train_Y, -1), s=40, cmap=plt.cm.Spectral);
-
-    return train_X, train_Y, test_X, test_Y
 
 
 def plot_decision_boundary(model, X, y):
@@ -60,20 +49,10 @@ def plot_decision_boundary(model, X, y):
     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
 
 
-########################################################################################################################
+################################################ LINEAR REGRESSION #####################################################
 
-#X_train, y_train, X_test, y_test = load_2D_dataset()
 
-# X, Y = load_planar_dataset()
-
-'''df = pandas.read_csv('data/iris.csv')
-X = df[df.columns[:-1]]
-Y = df[[df.columns[-1]]]
-Y = pandas.get_dummies(Y)
-X = X.to_numpy()
-Y = Y.to_numpy()'''
-
-# Read the dataset
+'''# Read the dataset
 df = pandas.read_csv(os.path.join('data', 'ex1data1.csv'))
 
 # Get inputs
@@ -98,8 +77,35 @@ linear_regression.fit(X_train, y_train, learning_rate=0.1, batch_size=32)
 
 # Plot predictions on training and test sets
 scatter_plot_predictions(model=linear_regression, inputs=X_train, target=y_train)
-scatter_plot_predictions(model=linear_regression, inputs=X_test, target=y_test)
+scatter_plot_predictions(model=linear_regression, inputs=X_test, target=y_test)'''
 
+################################################ LOGISTIC REGRESSION ###################################################
+
+
+# Read the dataset
+df = pandas.read_csv('data/iris.csv')
+df = df[df['Class'] != 'Iris-setosa']
+
+# Get inputs and target
+X = df[df.columns[:-1]]
+Y = df[[df.columns[-1]]]
+Y = pandas.get_dummies(Y)
+
+X = X.values
+Y = np.expand_dims(Y.values[:, 0], axis=1)
+
+# Split between training and test and standardize inputs
+X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1)
+
+input_scaler = StandardScaler()
+X_train = input_scaler.fit_transform(X_train)
+X_test = input_scaler.transform(X_test)
+
+# Create and fit a logistic regression model for binary classification
+logistic_regression = LogisticRegression(X_train.shape[1])
+logistic_regression.fit(X_train, y_train, learning_rate=0.1, batch_size=32)
+
+########################################################################################################################
 
 '''model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
 model.train(num_epochs=100, lr=0.01, X=X_train, Y=y_train, reg_l2=0.0, keep_prob=1.0, batch_size=64,

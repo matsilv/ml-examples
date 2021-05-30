@@ -69,106 +69,69 @@ class LinearRegression:
 
 class LogisticRegression:
 
-    def __init__(self, num_features, lr=0.1):
+    def __init__(self, num_features):
 
-        '''
-        :param num_features: input dimension
-        :param lr: learning rate
-        '''
+        """
+        :param num_features: int; input dimension.
+        """
 
-        self.n = num_features
-        self.theta = np.random.normal(size=(self.n, ))
-        self.learning_rate = lr
+        self.dim = num_features
+        self.theta = np.random.normal(size=(self.dim, 1))
 
+    def fit(self,
+            inputs: np.array,
+            target: np.array,
+            epochs: int = 1000,
+            batch_size: int = 32,
+            learning_rate: float = 0.1):
 
-    def train(self, X, Y, epochs=1000, batch_size=32):
+        """
+        Train the linear regression model.
+        :param inputs: numpy.array; input samples.
+        :param target: numpy.array; target samples.
+        :param epochs: int; number of epochs.
+        :param batch_size: int; batch size.
+        :param learning_rate: float; learning rate.
+        :return: list; history of mae during training process.
+        """
 
-        '''
-
-        :param X: examples input as Pandas dataframe
-        :param Y: examples classes as Pandas dataframe
-        :param epochs: number of epochs
-        :param batch_size: batch size
-        :return: history of mae during training process
-        '''
-
-        X, Y = X.to_numpy(), Y.to_numpy()
         history = []
 
         for e in range(0, epochs):
-            pred_error = 0
-            accuracy = 0
-            for i in range(0, X.shape[0]):
-                x = np.dot(X[i].T, self.theta)
-                predict = sigmoid(x)
 
-                if predict >= 0.5:
-                    cls = 1
-                else:
-                    cls = 0
+            batch_idxes = np.random.choice(np.arange(len(inputs)), batch_size, replace=False)
+            batch_inputs = inputs[batch_idxes]
+            batch_targets = target[batch_idxes]
+            predictions = self.predict(batch_inputs, logits=True)
+            pred_error = np.sum((predictions - batch_targets) * batch_inputs, axis=0)
 
-                pred_error += (predict - Y[i]) * X[i]
+            loss = np.expand_dims(learning_rate * pred_error / batch_size, axis=1)
+            self.theta -= loss
 
-                if cls == Y[i]:
-                    accuracy += 1
+            if e % 100 == 0:
+                val_preds = self.predict(inputs)
+                accuracy = np.sum(val_preds == target, axis=0) / len(val_preds)
+                print('Epoch: {} | Accuracy: {}'.format(e, accuracy))
 
-                # Stochastic Gradient Descent
-                if (i + 1) % batch_size == 0:
-                    loss = self.learning_rate * pred_error / batch_size
-                    self.theta -= loss
-
-            accuracy /= X.shape[0]
-            print('Epoch: {} | Accuracy: {} | Loss: {}'.format(e, accuracy, np.sum(pred_error)))
             history.append(accuracy)
 
         return history
 
-    def test(self, X, Y):
+    def predict(self, inputs: np.array, logits: bool = False, threshold: float = 0.5) -> np.array:
+        """
+        Make predictions given inputs.
+        :param inputs: numpy.array; input samples.
+        :param threshold: float; threshold for binary classification.
+        :return: predictions: numpy.array; predictions.
+        """
 
-        '''
+        preds = sigmoid(np.dot(inputs, self.theta))
+        if not logits:
+            return preds >= threshold
+        else:
+            return preds
 
-        :param X: examples input as Pandas dataframe
-        :param Y: examples class as Pandas dataframe
-        :return:
-        '''
-
-        accuracy = 0
-        X, Y = X.to_numpy(), Y.to_numpy()
-
-        for i in range(0, X.shape[0]):
-            x = np.dot(X[i].T, self.theta)
-            predict = sigmoid(x)
-
-            if predict >= 0.5:
-                cls = 1
-            else:
-                cls = 0
-
-            if cls == Y[i]:
-                accuracy += 1
-
-        print('Validation MAE: {}'.format(accuracy / X.shape[0]))
-
-    def predict(self, X):
-
-        '''
-        :param X: examples input as Pandas dataframe
-        :return: array of predictions
-        '''
-
-        X = X.to_numpy()
-        y = []
-
-        for i in range(0, X.shape[0]):
-            x = np.dot(X[i].T, self.theta)
-            predict = sigmoid(x)
-
-            if predict >= 0.5:
-                y.append(1)
-            else:
-                y.append(0)
-
-        return np.asarray(y)
+########################################################################################################################
 
 
 class NeuralNetwork:
