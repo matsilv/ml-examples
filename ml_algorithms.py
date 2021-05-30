@@ -2,87 +2,69 @@ import numpy as np
 from utility import sigmoid
 import math
 
+########################################################################################################################
+
 
 class LinearRegression:
 
-    def __init__(self, num_features, lr=0.1):
+    def __init__(self, num_features):
 
-        '''
-        :param num_features: input dimension
-        :param lr: learning rate
-        '''
+        """
+        :param num_features: int; input dimension.
+        """
 
-        self.n = num_features
-        # self.theta = np.random.normal(size=(self.n, ))
-        self.theta = np.zeros(shape=(2, ))
-        self.learning_rate = lr
+        self.dim = num_features
+        self.theta = np.random.normal(size=(self.dim, 1))
 
+    def fit(self,
+            inputs: np.array,
+            target: np.array,
+            epochs: int = 1000,
+            batch_size: int = 32,
+            learning_rate: float = 0.1):
 
-    def train(self, X, Y, epochs=1000, batch_size=32):
+        """
+        Train the linear regression model.
+        :param inputs: numpy.array; input samples.
+        :param target: numpy.array; target samples.
+        :param epochs: int; number of epochs.
+        :param batch_size: int; batch size.
+        :param learning_rate: float; learning rate.
+        :return: list; history of mae during training process.
+        """
 
-        '''
-
-        :param X: examples input as Pandas dataframe
-        :param Y: examples classes as Pandas dataframe
-        :param epochs: number of epochs
-        :param batch_size: batch size
-        :return: history of mae during training process
-        '''
-
-        #X, Y = X.to_numpy(), Y.to_numpy()
         history = []
 
         for e in range(0, epochs):
-            pred_error = 0
-            mae = 0
-            for i in range(0, X.shape[0]):
-                predict = np.dot(X[i].T, self.theta)
-                pred_error += (predict - Y[i]) * X[i]
-                mae += abs(predict - Y[i])
 
-                # Stochastic Gradient Descent
-                if (i + 1) % batch_size == 0:
-                    loss = self.learning_rate * pred_error / X.shape[0]
-                    self.theta -= loss
+            batch_idxes = np.random.choice(np.arange(len(inputs)), batch_size, replace=False)
+            batch_inputs = inputs[batch_idxes]
+            batch_targets = target[batch_idxes]
+            predictions = self.predict(batch_inputs)
+            pred_error = np.sum((predictions - batch_targets) * batch_inputs, axis=0)
 
-            print('Epoch: {} | MAE: {}'.format(e, mae))
+            loss = np.expand_dims(learning_rate * pred_error / batch_size, axis=1)
+            self.theta -= loss
+
+            if e % 100 == 0:
+                val_preds = self.predict(inputs)
+                mae = np.mean(abs(val_preds - target))
+                print('Epoch: {} | MAE: {}'.format(e, mae))
+
             history.append(mae)
 
         return history
 
-    def test(self, X, Y):
+    def predict(self, inputs: np.array) -> np.array:
+        """
+        Make predictions given inputs.
+        :param inputs: numpy.array; input samples.
+        :return: predictions: numpy.array; predictions.
+        """
 
-        '''
+        return np.dot(inputs, self.theta)
 
-        :param X: examples input as Pandas dataframe
-        :param Y: examples class as Pandas dataframe
-        :return:
-        '''
-
-        mae = 0
-        #X, Y = X.to_numpy(), Y.to_numpy()
-
-        for i in range(0, X.shape[0]):
-            predict = np.dot(X[i].T, self.theta)
-            mae += abs(predict - Y[i])
-
-        print('Validation MAE: {}'.format(mae))
-
-    def predict(self, X):
-
-        '''
-        :param X: examples input as Pandas dataframe
-        :return: array of predictions
-        '''
-
-        X = X.to_numpy()
-        y = []
-
-        for i in range(0, X.shape[0]):
-            predict = np.dot(X[i].T, self.theta)
-            y.append(predict)
-
-        return np.asarray(y)
+########################################################################################################################
 
 
 class LogisticRegression:

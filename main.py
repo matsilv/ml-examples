@@ -1,9 +1,14 @@
 from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, KMeans, AnomalyDetection
+from utility import scatter_plot_predictions
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 import pandas
+import os
+
+########################################################################################################################
 
 
 def load_planar_dataset():
@@ -55,24 +60,52 @@ def plot_decision_boundary(model, X, y):
     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
 
 
+########################################################################################################################
+
 #X_train, y_train, X_test, y_test = load_2D_dataset()
 
-#X, Y = load_planar_dataset()
+# X, Y = load_planar_dataset()
 
-df = pandas.read_csv('data/iris.csv')
+'''df = pandas.read_csv('data/iris.csv')
 X = df[df.columns[:-1]]
 Y = df[[df.columns[-1]]]
 Y = pandas.get_dummies(Y)
 X = X.to_numpy()
-Y = Y.to_numpy()
+Y = Y.to_numpy()'''
 
+# Read the dataset
+df = pandas.read_csv(os.path.join('data', 'ex1data1.csv'))
+
+# Get inputs
+X = np.expand_dims(df['Population'].values, axis=1)
+# Get targets
+Y = np.expand_dims(df['Profit'].values, axis=1)
+
+# Split training and test sets and standardize inputs and target
 X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1)
 
-model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
+input_scaler = StandardScaler()
+X_train = input_scaler.fit_transform(X_train)
+X_test = input_scaler.transform(X_test)
+
+target_scaler = StandardScaler()
+y_train = target_scaler.fit_transform(y_train)
+y_test = target_scaler.transform(y_test)
+
+# Create and fit a linear regression model
+linear_regression = LinearRegression(X_train.shape[1])
+linear_regression.fit(X_train, y_train, learning_rate=0.1, batch_size=32)
+
+# Plot predictions on training and test sets
+scatter_plot_predictions(model=linear_regression, inputs=X_train, target=y_train)
+scatter_plot_predictions(model=linear_regression, inputs=X_test, target=y_test)
+
+
+'''model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
 model.train(num_epochs=100, lr=0.01, X=X_train, Y=y_train, reg_l2=0.0, keep_prob=1.0, batch_size=64,
             optimizer='adam', beta1=0.9, beta2=0.999)
 _, acc = model.predict(X=X_test, y=y_test)
 print('Test set accuracy: {:.2f}'.format(acc))
 #plot_decision_boundary(model, X_test, y=y_test)
-plt.show()
+plt.show()'''
 
