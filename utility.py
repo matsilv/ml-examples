@@ -4,16 +4,6 @@ import matplotlib.pyplot as plt
 ########################################################################################################################
 
 
-def sigmoid(x, deriv=False):
-
-    if(deriv == True):
-        return  x * (1 - x)
-
-    return 1 / (1 + np.exp(-x))
-
-########################################################################################################################
-
-
 def scatter_plot_predictions(model, inputs, target):
     sorted_idxes = np.squeeze(np.argsort(inputs, axis=0))
     preds = model.predict(inputs)

@@ -2,9 +2,9 @@ from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, K
 from utility import scatter_plot_predictions
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io
 import pandas
 import os
 
@@ -82,7 +82,7 @@ scatter_plot_predictions(model=linear_regression, inputs=X_test, target=y_test)'
 ################################################ LOGISTIC REGRESSION ###################################################
 
 
-# Read the dataset
+'''# Read the dataset
 df = pandas.read_csv('data/iris.csv')
 df = df[df['Class'] != 'Iris-setosa']
 
@@ -95,7 +95,7 @@ X = X.values
 Y = np.expand_dims(Y.values[:, 0], axis=1)
 
 # Split between training and test and standardize inputs
-X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, test_size=0.1)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25)
 
 input_scaler = StandardScaler()
 X_train = input_scaler.fit_transform(X_train)
@@ -105,13 +105,44 @@ X_test = input_scaler.transform(X_test)
 logistic_regression = LogisticRegression(X_train.shape[1])
 logistic_regression.fit(X_train, y_train, learning_rate=0.1, batch_size=32)
 
-########################################################################################################################
+# Compute accuracy on test set
+preds = logistic_regression.predict(X_test)
+print('Accuracy on test set: {:.2f}'.format(accuracy_score(preds, y_test)))'''
 
-'''model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
-model.train(num_epochs=100, lr=0.01, X=X_train, Y=y_train, reg_l2=0.0, keep_prob=1.0, batch_size=64,
-            optimizer='adam', beta1=0.9, beta2=0.999)
-_, acc = model.predict(X=X_test, y=y_test)
-print('Test set accuracy: {:.2f}'.format(acc))
+################################################ NEURAL NETWORK ##################################################################
+
+
+df = pandas.read_csv('data/iris.csv')
+
+# Get inputs and target
+X = df[df.columns[:-1]]
+Y = df[[df.columns[-1]]]
+Y = pandas.get_dummies(Y)
+
+X = X.values
+Y = Y.values
+
+# Split between training and test and standardize inputs
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25)
+
+input_scaler = StandardScaler()
+X_train = input_scaler.fit_transform(X_train)
+X_test = input_scaler.transform(X_test)
+
+model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
+model.fit(num_epochs=100,
+          learning_rate=0.01,
+          inputs=X_train,
+          target=y_train,
+          reg_l2=0.0,
+          batch_size=64,
+          optimizer='adam',
+          beta_1=0.9,
+          beta_2=0.999)
+preds = model.predict(X_test, logits=False)
+accuracy = accuracy_score(preds, y_test)
+
+print('Test set accuracy: {:.2f}'.format(accuracy))
 #plot_decision_boundary(model, X_test, y=y_test)
-plt.show()'''
+#plt.show()
 
