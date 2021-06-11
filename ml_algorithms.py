@@ -8,7 +8,7 @@ import math
 
 class LinearRegression:
 
-    def __init__(self, num_features):
+    def __init__(self, num_features: int):
 
         """
         :param num_features: int; input dimension.
@@ -70,7 +70,7 @@ class LinearRegression:
 
 class LogisticRegression:
 
-    def __init__(self, num_features):
+    def __init__(self, num_features: int):
 
         """
         :param num_features: int; input dimension.
@@ -137,8 +137,14 @@ class LogisticRegression:
 
 class NeuralNetwork:
 
-    def __init__(self, attr_num, num_clss, hidden_layers):
-        self.attr_num = attr_num
+    def __init__(self, num_features: int, num_clss: int, hidden_layers: list):
+        """
+
+        :param num_features: int; input dimension.
+        :param num_clss: int; output dimension.
+        :param hidden_layers: list of int; number of units for each hidden layer.
+        """
+        self.num_features = num_features
         self.num_clss = num_clss
         self.hidden_layers = hidden_layers
 
@@ -146,7 +152,7 @@ class NeuralNetwork:
         self.syn = []
 
         # Normal distribution initialization with sigma=0.4 and mean=0
-        self.syn.append(np.random.normal(0, 0.4, (attr_num, self.hidden_layers[0])))
+        self.syn.append(np.random.normal(0, 0.4, (self.num_features, self.hidden_layers[0])))
 
         for i in range(0, len(self.hidden_layers)-1):
             self.syn.append(np.random.normal(0, 0.4, (self.hidden_layers[i], self.hidden_layers[i+1])))
@@ -256,13 +262,20 @@ class NeuralNetwork:
 
             # Compute accuracy
             preds = self.predict(inputs, logits=False)
-            accuracy = accuracy_score(preds, target)
+            target_class = np.argmax(target, axis=1)
+            accuracy = accuracy_score(preds, target_class)
 
             print(f'Epoch: {epoch}/{num_epochs} | Loss: {loss} | Accuracy: {accuracy}')
 
         return history
 
-    def predict(self, inputs, logits=True, threshold=0.5):
+    def predict(self, inputs: np.array, logits: bool = True):
+        """
+        Make predictions.
+        :param inputs: numpy.array of shape (n_samples, num_features); the input samples.
+        :param logits: boolean; True to output raw logits, False to return predicted classes.
+        :return:
+        """
         output = inputs
 
         for i in range(0, len(self.hidden_layers)):
@@ -272,40 +285,41 @@ class NeuralNetwork:
 
         if not logits:
             output = softmax(output, axis=1)
-            output = output >= threshold
+            output = np.argmax(output, axis=1)
 
             return output
 
+########################################################################################################################
+
 
 class KMeans:
-    def __init__(self, num_clusters, data_points):
+    def __init__(self, num_clusters: int, data_points: np.array):
         """
 
-        :param num_clusters: set the number of desired clusters
-        :param data_points: data to be clustered
+        :param num_clusters: int; set the number of desired clusters.
+        :param data_points: np.array of shape (n_samples, num_features); data to be clustered.
         """
+
         self.k = num_clusters
-        self.data = data_points.to_numpy()
+        self.data = data_points.copy()
 
-        self.__random_init__()
+        self._random_init()
 
         self.assigned_clusters = np.zeros(self.data.shape[0])
 
-
-    def __random_init__(self):
+    def _random_init(self):
         """
-        Choose initial centroids from data
+        Choose initial centroids.
         :return:
         """
 
         indexes = np.random.choice(np.arange(0, self.data.shape[0]), size=self.k, replace=False)
         self.centroids = self.data[indexes]
-        print(self.centroids)
 
-    def __assign_clusters__(self):
+    def _assign_clusters(self):
         """
-        Assign each data point to a cluster
-        :return: distortion
+        Assign each data point to a cluster.
+        :return: float; distortion.
         """
 
         dist = np.zeros((self.k, ))
@@ -320,10 +334,10 @@ class KMeans:
 
         return distortion
 
-    def __compute_centroids__(self):
+    def _compute_centroids(self):
 
         """
-        Compute new centroid as average of cluster data points
+        Compute new centroids as average of cluster data points.
         :return:
         """
 
@@ -332,37 +346,19 @@ class KMeans:
             cluster_points = self.data[cluster].squeeze()
             self.centroids[i] = np.mean(cluster_points, axis=0)
 
-        print(self.centroids)
-
-
-    def train(self, num_iter):
+    def fit(self, num_iter: int) -> np.array:
+        """
+        Fit the clusters.
+        :param num_iter: int; number of iterations.
+        :return:
+        """
         for i in range(0, num_iter):
-            J = self.__assign_clusters__()
-            print('Iteration: {} | Distortion: {}'.format(i, J))
-            self.__compute_centroids__()
+            distortion = self._assign_clusters()
+            print('Iteration: {} | Distortion: {}'.format(i, distortion))
+            self._compute_centroids()
 
         return self.assigned_clusters
 
-
-class AnomalyDetection:
-
-    def __init__(self, data, eps=0.01):
-        """
-        :param data: features as Pandas dataframe
-        :param eps: probability threshold for anomaly detection
-        """
-        self.data = data.copy().to_numpy()
-        self.eps = eps
-
-    def fit(self):
-        self.mean = np.mean(self.data, axis=0)
-        self.sigma = np.var(self.data, axis=0)
-
-    def predict(self, x):
-        x = x.copy().to_numpy()
-        p = np.prod(1 / (np.sqrt(2 * np.pi) * self.sigma) * np.exp(- (x - self.mean) ** 2 / (2 * self.sigma ** 2)),
-                    axis=1)
-        return p < self.eps, p
 
 
 

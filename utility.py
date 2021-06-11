@@ -13,3 +13,5 @@ def scatter_plot_predictions(model, inputs, target):
     plt.scatter(inputs, target)
     plt.plot(inputs, preds)
     plt.show()
+
+########################################################################################################################

@@ -1,5 +1,6 @@
-from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, KMeans, AnomalyDetection
+from ml_algorithms import LinearRegression, LogisticRegression, NeuralNetwork, KMeans
 from utility import scatter_plot_predictions
+from sklearn.datasets._samples_generator import make_blobs
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
@@ -7,47 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas
 import os
-
-########################################################################################################################
-
-
-
-def load_planar_dataset():
-    np.random.seed(1)
-    m = 400  # number of examples
-    N = int(m / 2)  # number of points per class
-    D = 2  # dimensionality
-    X = np.zeros((m, D))  # data matrix where each row is a single example
-    Y = np.zeros((m, 1), dtype='uint8')  # labels vector (0 for red, 1 for blue)
-    a = 4  # maximum ray of the flower
-
-    for j in range(2):
-        ix = range(N * j, N * (j + 1))
-        t = np.linspace(j * 3.12, (j + 1) * 3.12, N) + np.random.randn(N) * 0.2  # theta
-        r = a * np.sin(4 * t) + np.random.randn(N) * 0.2  # radius
-        X[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
-        Y[ix] = j
-
-    return X, Y
-
-
-def plot_decision_boundary(model, X, y):
-    # Set min and max values and give it some padding
-    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    h = 0.01
-    # Generate a grid of points with distance h between them
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-    # Predict the function value for the whole grid
-    Z, _ = model.predict(X=np.c_[xx.ravel(), yy.ravel()], y=None)
-    Z = Z.reshape(xx.shape)
-    # Plot the contour and training examples
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-    plt.ylabel('x2')
-    plt.xlabel('x1')
-    y = y.reshape(-1)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
-
 
 ################################################ LINEAR REGRESSION #####################################################
 
@@ -112,7 +72,7 @@ print('Accuracy on test set: {:.2f}'.format(accuracy_score(preds, y_test)))'''
 ################################################ NEURAL NETWORK ##################################################################
 
 
-df = pandas.read_csv('data/iris.csv')
+'''df = pandas.read_csv('data/iris.csv')
 
 # Get inputs and target
 X = df[df.columns[:-1]]
@@ -129,7 +89,10 @@ input_scaler = StandardScaler()
 X_train = input_scaler.fit_transform(X_train)
 X_test = input_scaler.transform(X_test)
 
-model = NeuralNetwork(attr_num=X_train.shape[1], hidden_layers=[5, 5, 5], num_clss=y_train.shape[1])
+model = NeuralNetwork(num_features=X_train.shape[1],
+                      hidden_layers=[5, 5, 5],
+                      num_clss=y_train.shape[1])
+
 model.fit(num_epochs=100,
           learning_rate=0.01,
           inputs=X_train,
@@ -139,10 +102,26 @@ model.fit(num_epochs=100,
           optimizer='adam',
           beta_1=0.9,
           beta_2=0.999)
+
 preds = model.predict(X_test, logits=False)
+y_test = np.argmax(y_test, axis=1)
 accuracy = accuracy_score(preds, y_test)
 
-print('Test set accuracy: {:.2f}'.format(accuracy))
-#plot_decision_boundary(model, X_test, y=y_test)
-#plt.show()
+print('Test set accuracy: {:.2f}'.format(accuracy))'''
+
+##################################################### K-MEANS ##########################################################
+
+
+X, y_true = make_blobs(n_samples=100, centers=3, cluster_std=0.6)
+
+plt.scatter(X[:, 0], X[:, 1])
+plt.show()
+
+k_means = KMeans(num_clusters=3, data_points=X)
+clusters = k_means.fit(10)
+
+plt.scatter(X[:, 0], X[:, 1], c=clusters)
+plt.show()
+
+
 

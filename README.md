@@ -8,4 +8,3 @@ Implemented algorithms:
 - [x] Logistic Regression for binary classification
 - [x] Multi-layers Neural Network
 - [x] KMeans
-- [x] Anomaly Detection
